@@ -38,17 +38,18 @@ class DataReader:
         self.users.append(user_id)
         self.ratings.append(rating)
 
-    # movies are rows, users are columns
+        # users are rows, movies are columns
+
     def sparse_matrix_a(self):
+        return coo_matrix((np.array(self.ratings, dtype=np.int64),
+                           (np.array(self.users, dtype=np.int64),
+                            np.array(self.movies, dtype=np.int64))))
+
+    # movies are rows, users are columns
+    def sparse_matrix_b(self):
         return coo_matrix((np.array(self.ratings, dtype=np.int64),
                           (np.array(self.movies, dtype=np.int64),
                            np.array(self.users, dtype=np.int64))))
-
-    # users are rows, movies are columns
-    def sparse_matrix_b(self):
-        return coo_matrix((np.array(self.ratings, dtype=np.int64),
-                          (np.array(self.users, dtype=np.int64),
-                           np.array(self.movies, dtype=np.int64))))
 
 
 if __name__ == '__main__':
