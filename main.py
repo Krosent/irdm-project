@@ -18,8 +18,8 @@ class DataReader:
 
         limit = 0
         for line in input_1_lines:
-            limit = limit + 1
-            if limit <= 150000:
+            #limit = limit + 1
+            #if limit <= 1_000_000:
                 movie_id = self.parse_movie_id(line)
                 self.parse_user_and_rating(line, movie_id)
 
