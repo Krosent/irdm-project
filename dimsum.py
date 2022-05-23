@@ -40,29 +40,39 @@ def map(row, gamma):
             if cj != 0.0 and ck != 0.0:
                 formula = gamma * (1 / (cj * ck))
                 probability = min(1, gamma * formula)
-                print("Probability: ", probability)
+                # print("Probability: ", probability)
                 rand = random.uniform(0, 1)
                 if rand <= probability:
-                    result.append({str(cj) + "-" + str(ck): first_rating * second_rating})
+                    result.append((str(cj) + "-" + str(ck), first_rating * second_rating))
     return result
 
 
-def reduce(mapper_results):
+def reduce(mapper_results, gamma):
     # https://docs.python.org/3/library/collections.html#collections.defaultdict
     _dict = defaultdict(list)
 
     for k, v in mapper_results:
-        _dict[k].append(v)
+        _dict[k].append(float(v))
 
-    # print("dict res: " + str(_dict))
+    for key, values in _dict.items():
+        rating_indexes = key.split("-")
 
-    # TODO: Implement Reduce
+        if (gamma / (float(rating_indexes[0]) * float(rating_indexes[1]))) < 1:
+            fst = 1 / (float(rating_indexes[0]) * float(rating_indexes[1]))
+            snd = sum(values)
 
-    return "reduce"
+            return fst * snd
+        else:
+            fst = 1 / gamma
+            snd = sum(values)
+
+            return fst * snd
 
 
 if __name__ == '__main__':
     for i in range(0, 10):
-        mapper_result = map(matrix_a.getrow(i), 0.8)
-        reduce(mapper_result)
-        # print("result: " + str(len(mapper)))
+        gamma = 0.8
+        mapper_result = map(matrix_a.getrow(i), gamma)
+        if mapper_result:
+            reducer_result = reduce(mapper_result, gamma)
+            print("reducer: " + str(reducer_result))
