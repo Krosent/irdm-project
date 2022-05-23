@@ -1,3 +1,4 @@
+from collections import defaultdict
 from itertools import combinations
 from main import DataReader
 import numpy as np
@@ -18,6 +19,7 @@ print(norms)
 
 
 def map(row, gamma):
+    result = []
     if row.count_nonzero() > 1:
         ratings = np.delete(row.toarray()[0], np.where(row.toarray()[0] == 0))
         indices = np.nonzero(row)[1]
@@ -42,14 +44,25 @@ def map(row, gamma):
                 rand = random.uniform(0, 1)
                 if rand <= probability:
                     result.append({str(cj) + "-" + str(ck): first_rating * second_rating})
-        return result
+    return result
 
-def reduce():
+
+def reduce(mapper_results):
+    # https://docs.python.org/3/library/collections.html#collections.defaultdict
+    _dict = defaultdict(list)
+
+    for k, v in mapper_results:
+        _dict[k].append(v)
+
+    # print("dict res: " + str(_dict))
+
+    # TODO: Implement Reduce
+
     return "reduce"
 
 
 if __name__ == '__main__':
-    print("shape: " + str(matrix_b.shape))
     for i in range(0, 10):
-        mapper = map(matrix_a.getrow(i), 0.8)
+        mapper_result = map(matrix_a.getrow(i), 0.8)
+        reduce(mapper_result)
         # print("result: " + str(len(mapper)))
