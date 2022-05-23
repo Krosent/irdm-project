@@ -26,21 +26,23 @@ def map(row, gamma):
             combined.append((indices[i], ratings[i]))
 
         pairs = list(combinations(combined, 2))  # creating pairs between every tuple in combined
+        result = []
         for ai in pairs:  # iterate over all the pairs
-            first_index = ai[0][0]
+            first_index = ai[0][0]  # aij
             first_rating = ai[0][1]
-            second_index = ai[1][0]
+            second_index = ai[1][0]  # aik
             second_rating = ai[1][1]
 
-            aij = norms[first_index - 1]
-            aik = norms[second_index - 1]
-            if aij != 0.0 and aik != 0.0:
-                formula = gamma * (1 / (aij * aik))
+            cj = norms[first_index - 1]
+            ck = norms[second_index - 1]
+            if cj != 0.0 and ck != 0.0:
+                formula = gamma * (1 / (cj * ck))
                 probability = min(1, gamma * formula)
                 print("Probability: ", probability)
                 rand = random.uniform(0, 1)
                 if rand <= probability:
-                    print("EMIT")  # TODO
+                    result.append({str(cj) + "-" + str(ck): first_rating * second_rating})
+        return result
 
 def reduce():
     return "reduce"
@@ -49,4 +51,5 @@ def reduce():
 if __name__ == '__main__':
     print("shape: " + str(matrix_b.shape))
     for i in range(0, 10):
-        map(matrix_a.getrow(i), 0.8)
+        mapper = map(matrix_a.getrow(i), 0.8)
+        # print("result: " + str(len(mapper)))
