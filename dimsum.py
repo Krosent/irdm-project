@@ -1,5 +1,6 @@
 from collections import defaultdict
 from itertools import combinations
+from scipy.sparse import csr_matrix, vstack
 from main import DataReader
 import numpy as np
 from scipy.sparse.linalg import norm
@@ -11,7 +12,6 @@ matrix_b = reader.sparse_matrix_b()
 norms = []
 
 # calculating the norms beforehand, this will save time in the iterations.
-# I assume that we need to take random 4500 columns for each row
 matrix_b.resize(4500, 4500)
 for i in range(4500):
     norms.append(norm(matrix_b.getrow(i)))
@@ -62,24 +62,53 @@ def reduce(mapper_results, gamma):
         if (gamma / (float(rating_indexes[0]) * float(rating_indexes[1]))) < 1:
             fst = 1 / (float(rating_indexes[0]) * float(rating_indexes[1]))
             snd = sum(values)
-
             return key, fst * snd
         else:
             fst = 1 / gamma
             snd = sum(values)
-
             return key, fst * snd
 
 
+def converter(result):
+    if result is not None:
+        row = result[0].split("-")[0]
+        col = result[0].split("-")[1]
+        value = result[1]
+        return row, col, value
+
+
+def to_sparse_matrix(rows, cols, values):
+    return csr_matrix((np.array(values, dtype=np.float64),
+                       (np.array(rows, dtype=np.int64),
+                        np.array(cols, dtype=np.int64))))
+
+
 if __name__ == '__main__':
-    for i in range(0, 100):
-        gamma = 0.4
+    approximated_rows = []
+    approximated_cols = []
+    approximated_values = []
+
+    exact_rows = []
+    gamma = 0.4
+
+    print("--- step 1 ---")
+    for i in range(0, 300):
         # approximation
         mapper_result = map(matrix_a.getrow(i), gamma)
         if mapper_result:
-            # print("row: " + str(matrix_a.getrow(i)))
             reducer_result = reduce(mapper_result, gamma)
-            print("dimsum results: " + str(reducer_result))
-            # print("---------")
-            # print(str((matrix_a.getrow(i).transpose()).multiply(matrix_a.getrow(i))))
-            # print("xxxxxxxx")
+            _row, _col, _value = converter(reducer_result)
+            approximated_rows.append(_row)
+            approximated_cols.append(_col)
+            approximated_values.append(_value)
+
+            exact_rows.append(matrix_a.getrow(i))
+
+    print('--- step 2 ---')
+    approximated_operation = to_sparse_matrix(approximated_rows, approximated_cols, approximated_values)
+
+    exact_matrix = vstack(exact_rows)
+    exact_operation = exact_matrix.transpose().dot(exact_matrix)
+
+    #  mse = (np.square(approximated_results - exact_operation)).mean()
+    #  print(mse)
