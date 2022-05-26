@@ -35,10 +35,12 @@ def map(row, gamma):
             second_index = ai[1][0]  # aik
             second_rating = ai[1][1]
 
-            cj = norms[first_index - 1]
-            ck = norms[second_index - 1]
-            if cj != 0.0 and ck != 0.0:
-                formula = gamma * (1 / (cj * ck))
+            cj = first_index
+            ck = second_index
+            cj_normalized = norms[cj - 1]  # list starts from 0
+            ck_normalized = norms[ck - 1]
+            if cj_normalized != 0.0 and ck_normalized != 0.0:
+                formula = gamma * (1 / (cj_normalized * ck_normalized))
                 probability = min(1, gamma * formula)
                 # print("Probability: ", probability)
                 rand = random.uniform(0, 1)
@@ -61,18 +63,23 @@ def reduce(mapper_results, gamma):
             fst = 1 / (float(rating_indexes[0]) * float(rating_indexes[1]))
             snd = sum(values)
 
-            return fst * snd
+            return key, fst * snd
         else:
             fst = 1 / gamma
             snd = sum(values)
 
-            return fst * snd
+            return key, fst * snd
 
 
 if __name__ == '__main__':
-    for i in range(0, 10):
-        gamma = 0.8
+    for i in range(0, 100):
+        gamma = 0.4
+        # approximation
         mapper_result = map(matrix_a.getrow(i), gamma)
         if mapper_result:
+            # print("row: " + str(matrix_a.getrow(i)))
             reducer_result = reduce(mapper_result, gamma)
-            print("reducer: " + str(reducer_result))
+            print("dimsum results: " + str(reducer_result))
+            # print("---------")
+            # print(str((matrix_a.getrow(i).transpose()).multiply(matrix_a.getrow(i))))
+            # print("xxxxxxxx")
