@@ -20,7 +20,7 @@ print(norms)
 
 def map(row, gamma):
     result = []
-    if row.count_nonzero() > 1:
+    if row.count_nonzero() >= 1:
         ratings = np.delete(row.toarray()[0], np.where(row.toarray()[0] == 0))
         indices = np.nonzero(row)[1]
         combined = []  # making tuples: (index, rating) for each rating (made tuples so the index and rating is easily accessable inside of the iteration below)
@@ -109,6 +109,9 @@ if __name__ == '__main__':
 
     exact_matrix = vstack(exact_rows)
     exact_operation = exact_matrix.transpose().dot(exact_matrix)
+
+    print('--- step 3 ---')
+    print(str(approximated_operation))
 
     #  mse = (np.square(approximated_results - exact_operation)).mean()
     #  print(mse)
