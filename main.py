@@ -1,6 +1,5 @@
-import pandas as pd
 import numpy as np
-from scipy.sparse import csr_matrix, csr_array, coo_matrix
+from scipy.sparse import csr_matrix
 
 
 class DataReader:
@@ -19,7 +18,7 @@ class DataReader:
         limit = 0
         for line in input_1_lines:
             limit = limit + 1
-            if limit <= 150000:
+            if limit <= 500_000:
                 movie_id = self.parse_movie_id(line)
                 self.parse_user_and_rating(line, movie_id)
 
