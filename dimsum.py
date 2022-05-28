@@ -11,7 +11,7 @@ reader = DataReader()
 matrix_a = reader.sparse_matrix_a()
 matrix_b = matrix_a.transpose()
 norms = np.sqrt(matrix_b.multiply(matrix_b).sum(1))
-
+print("norms: " + str(norms))
 # calculating the norms beforehand, this will save time in the iterations.
 # matrix_b.resize(4500, 4500)
 # for i in range(4500):
@@ -31,7 +31,6 @@ def map(row, gamma):
             combined.append((indices[i], ratings[i]))
 
         pairs = list(combinations(combined, 2))  # creating pairs between every tuple in combined
-        result = []
         for ai in pairs:  # iterate over all the pairs
             first_index = ai[0][0]  # aij
             first_rating = ai[0][1]
