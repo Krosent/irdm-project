@@ -12,7 +12,8 @@ reader = DataReader()
 matrix_a = reader.sparse_matrix_a()
 matrix_b = matrix_a.transpose()
 norms = np.sqrt(matrix_b.multiply(matrix_b).sum(1))
-#  print("norms: " + str(norms))
+threshold = 0.5
+gamma = 4 * np.log(len(norms)) / threshold
 
 # calculating the norms beforehand, this will save time in the iterations.
 # matrix_b.resize(4500, 4500)
@@ -21,8 +22,9 @@ norms = np.sqrt(matrix_b.multiply(matrix_b).sum(1))
 # print(norms)
 
 
-def map(row, gamma):
+def map(row):
     result = []
+
     if row.count_nonzero() >= 1:
         ratings = np.delete(row.toarray()[0], np.where(row.toarray()[0] == 0))
         indices = np.nonzero(row)[1]
@@ -39,30 +41,35 @@ def map(row, gamma):
 
             cj = first_index
             ck = second_index
-            cj_normalized = norms[cj - 1]  # list starts from 0
-            ck_normalized = norms[ck - 1]
-            if cj_normalized != 0.0 and ck_normalized != 0.0:
-                formula = gamma * (1 / (cj_normalized * ck_normalized))
-                probability = min(1, gamma * formula)
-                # print("Probability: ", probability)
-                rand = random.uniform(0, 1)
-                if rand <= probability:
-                    result.append((str(cj) + "-" + str(ck), first_rating * second_rating))
+            cj_normalized = norms[cj]  # list starts from 0
+            ck_normalized = norms[ck]
+            #  if cj_normalized != 0.0 and ck_normalized != 0.0:
+            formula = gamma * (1 / (cj_normalized * ck_normalized))
+            probability = min(1.0, gamma * formula)
+            # print("Probability: ", probability)
+            rand = random.random()
+            if rand <= probability:
+                result.append((str(cj) + "-" + str(ck), first_rating * second_rating))
     return result
 
 
-def reduce(mapper_results, gamma):
+def reduce(mapper_results):
     # https://docs.python.org/3/library/collections.html#collections.defaultdict
     _dict = defaultdict(list)
 
     for k, v in mapper_results:
-        _dict[k].append(float(v))
+        _key = k.split('-')
+        _key = str(_key[1]) + '-' + str(_key[0])
+        if _key not in _dict:
+            _dict[k].append(float(v))
+        else:
+            _dict[_key].append(float(v))
 
     for key, values in _dict.items():
         rating_indexes = key.split("-")
 
-        cj_normalized = norms[int(rating_indexes[0]) - 1]  # list starts from 0
-        ck_normalized = norms[int(rating_indexes[1]) - 1]
+        cj_normalized = norms[int(rating_indexes[0])]  # list starts from 0
+        ck_normalized = norms[int(rating_indexes[1])]
 
         if (gamma / (cj_normalized * ck_normalized)) > 1:
             fst = 1 / (cj_normalized * ck_normalized)
@@ -100,19 +107,18 @@ if __name__ == '__main__':
     approximated_values = []
 
     exact_rows = []
-    gamma = 0.3
 
     print("--- step 1: Dimsium Application ---")
     for i in range(0, len(reader.users) - 1):
-        mapper_result = map(matrix_a.getrow(i), gamma)
+        mapper_result = map(matrix_a.getrow(i))
+        # do not apply reduce operation on empty map results
         if mapper_result:
-            reducer_result = reduce(mapper_result, gamma)
+            reducer_result = reduce(mapper_result)
             _row, _col, _value = converter(reducer_result)
             approximated_rows.append(_row)
             approximated_cols.append(_col)
             approximated_values.append(_value)
 
-            exact_rows.append(matrix_a.getrow(i))
 
     print('--- step 2: Dimsium Results Conversion ---')
     #  dimsium results to sparse matrix conversion
@@ -121,8 +127,7 @@ if __name__ == '__main__':
 
     print('--- step 3: Exact Operation Calculation ---')
     #  calculation of A^T * T
-    exact_matrix = vstack(exact_rows)
-    exact_operation = exact_matrix.transpose().dot(exact_matrix)
+    exact_operation = matrix_a.transpose().dot(matrix_a)
 
     print('--- step 3: MSE Calculation ---')
     mse = (np.square(approximated_operation - exact_operation)).mean()
