@@ -104,7 +104,6 @@ if __name__ == '__main__':
 
     print("--- step 1: Dimsium Application ---")
     for i in range(0, len(reader.users) - 1):
-        # approximation
         mapper_result = map(matrix_a.getrow(i), gamma)
         if mapper_result:
             reducer_result = reduce(mapper_result, gamma)
@@ -115,12 +114,13 @@ if __name__ == '__main__':
 
             exact_rows.append(matrix_a.getrow(i))
 
-    print('--- step 2: Dimsium Results Conversion && Exact Operation Calculation ---')
-    #  dimsium
+    print('--- step 2: Dimsium Results Conversion ---')
+    #  dimsium results to sparse matrix conversion
     approximated_operation = to_sparse_matrix(approximated_rows, approximated_cols, approximated_values)
     approximated_operation.resize(149, 149)
 
-    #  A^T * T
+    print('--- step 3: Exact Operation Calculation ---')
+    #  calculation of A^T * T
     exact_matrix = vstack(exact_rows)
     exact_operation = exact_matrix.transpose().dot(exact_matrix)
 
