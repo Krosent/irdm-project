@@ -18,10 +18,10 @@ class DataReader:
 
         limit = 0
         for line in input_1_lines:
-            # limit = limit + 1
-            # if limit <= 150000:
-            movie_id = self.parse_movie_id(line)
-            self.parse_user_and_rating(line, movie_id)
+            limit = limit + 1
+            if limit <= 500_000:
+                movie_id = self.parse_movie_id(line)
+                self.parse_user_and_rating(line, movie_id)
 
     def parse_movie_id(self, line):
         if ':' in line:

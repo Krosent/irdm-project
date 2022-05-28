@@ -1,21 +1,24 @@
 from collections import defaultdict
 from itertools import combinations
+
 from scipy.sparse import csr_matrix, vstack
+
 from main import DataReader
 import numpy as np
-from scipy.sparse.linalg import norm
 import random
 
 reader = DataReader()
 matrix_a = reader.sparse_matrix_a()
-matrix_b = reader.sparse_matrix_b()
-norms = []
+matrix_b = matrix_a.transpose()
+norms = np.sqrt(matrix_b.multiply(matrix_b).sum(1))
 
 # calculating the norms beforehand, this will save time in the iterations.
-matrix_b.resize(4500, 4500)
-for i in range(4500):
-    norms.append(norm(matrix_b.getrow(i)))
-print(norms)
+# matrix_b.resize(4500, 4500)
+# for i in range(4500):
+#     norms.append(norm(matrix_b.getrow(i)))
+
+
+# print(norms)
 
 
 def map(row, gamma):
@@ -59,8 +62,11 @@ def reduce(mapper_results, gamma):
     for key, values in _dict.items():
         rating_indexes = key.split("-")
 
-        if (gamma / (float(rating_indexes[0]) * float(rating_indexes[1]))) < 1:
-            fst = 1 / (float(rating_indexes[0]) * float(rating_indexes[1]))
+        cj_normalized = norms[int(rating_indexes[0]) - 1]  # list starts from 0
+        ck_normalized = norms[int(rating_indexes[1]) - 1]
+
+        if (gamma / (cj_normalized * ck_normalized)) > 1:
+            fst = 1 / (cj_normalized * ck_normalized)
             snd = sum(values)
             return key, fst * snd
         else:
@@ -78,9 +84,11 @@ def converter(result):
 
 
 def to_sparse_matrix(rows, cols, values):
-    return csr_matrix((np.array(values, dtype=np.float64),
-                       (np.array(rows, dtype=np.int64),
-                        np.array(cols, dtype=np.int64))))
+    matrix = csr_matrix((np.array(values, dtype=np.float64),
+                         (np.array(rows, dtype=np.int64),
+                          np.array(cols, dtype=np.int64))))
+    # matrix.resize(4500, 4500)
+    return matrix
 
 
 if __name__ == '__main__':
@@ -92,7 +100,7 @@ if __name__ == '__main__':
     gamma = 0.4
 
     print("--- step 1 ---")
-    for i in range(0, 300):
+    for i in range(0, len(reader.users) - 1):
         # approximation
         mapper_result = map(matrix_a.getrow(i), gamma)
         if mapper_result:
@@ -106,6 +114,7 @@ if __name__ == '__main__':
 
     print('--- step 2 ---')
     approximated_operation = to_sparse_matrix(approximated_rows, approximated_cols, approximated_values)
+    approximated_operation.resize(149, 149)
 
     exact_matrix = vstack(exact_rows)
     exact_operation = exact_matrix.transpose().dot(exact_matrix)
@@ -113,5 +122,6 @@ if __name__ == '__main__':
     print('--- step 3 ---')
     print(str(approximated_operation))
 
-    #  mse = (np.square(approximated_results - exact_operation)).mean()
+    mse = (np.square(approximated_operation - exact_operation)).mean()
+    print(mse)
     #  print(mse)
