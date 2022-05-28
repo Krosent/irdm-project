@@ -2,10 +2,12 @@ from main import DataReader
 import numpy as np
 from scipy.sparse import linalg
 from scipy.stats import ortho_group
+from random import seed
+from random import randint
 
 
 reader = DataReader()
-matrix_b = reader.sparse_matrix_b().astype(float).tolil()
+matrix_b = reader.sparse_matrix_b().astype(np.float64).tolil()
 matrix_b.resize(100, 8000)
 epochs = 3500
 
@@ -54,7 +56,7 @@ def bgd(matrix, p, q, lam, gradient_step, epochs):
     for k in range(epochs):
         gQ = 0
         gP = 0
-        for j in range(0, 5): 
+        for j in range(1, 6): 
             for i in range(len(non_zero_row)):
                 row = non_zero_row[i] #idx
                 col = non_zero_col[i] #idx
