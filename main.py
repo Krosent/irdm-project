@@ -1,6 +1,5 @@
-import pandas as pd
 import numpy as np
-from scipy.sparse import csr_matrix, csr_array, coo_matrix
+from scipy.sparse import csr_matrix
 
 
 class DataReader:

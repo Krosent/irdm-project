@@ -6,18 +6,18 @@ from scipy.sparse import csr_matrix, vstack
 from main import DataReader
 import numpy as np
 import random
+import time
 
 reader = DataReader()
 matrix_a = reader.sparse_matrix_a()
 matrix_b = matrix_a.transpose()
 norms = np.sqrt(matrix_b.multiply(matrix_b).sum(1))
-print("norms: " + str(norms))
+#  print("norms: " + str(norms))
+
 # calculating the norms beforehand, this will save time in the iterations.
 # matrix_b.resize(4500, 4500)
 # for i in range(4500):
 #     norms.append(norm(matrix_b.getrow(i)))
-
-
 # print(norms)
 
 
@@ -91,14 +91,18 @@ def to_sparse_matrix(rows, cols, values):
 
 
 if __name__ == '__main__':
+    print("Start Execution")
+    start_time = time.time()
+
+    # For building sparse matrix from map-reduce operation
     approximated_rows = []
     approximated_cols = []
     approximated_values = []
 
     exact_rows = []
-    gamma = 0.4
+    gamma = 0.3
 
-    print("--- step 1 ---")
+    print("--- step 1: Dimsium Application ---")
     for i in range(0, len(reader.users) - 1):
         # approximation
         mapper_result = map(matrix_a.getrow(i), gamma)
@@ -111,16 +115,19 @@ if __name__ == '__main__':
 
             exact_rows.append(matrix_a.getrow(i))
 
-    print('--- step 2 ---')
+    print('--- step 2: Dimsium Results Conversion && Exact Operation Calculation ---')
+    #  dimsium
     approximated_operation = to_sparse_matrix(approximated_rows, approximated_cols, approximated_values)
     approximated_operation.resize(149, 149)
 
+    #  A^T * T
     exact_matrix = vstack(exact_rows)
     exact_operation = exact_matrix.transpose().dot(exact_matrix)
 
-    print('--- step 3 ---')
-    print(str(approximated_operation))
-
+    print('--- step 3: MSE Calculation ---')
     mse = (np.square(approximated_operation - exact_operation)).mean()
-    print(mse)
-    #  print(mse)
+    print("MSE Value: " + str(mse))
+
+    print("End Execution")
+    end_time = time.time()
+    print("--- %s seconds time execution of the whole task ---" % (end_time - start_time))
