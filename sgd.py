@@ -8,7 +8,7 @@ from random import randint
 
 reader = DataReader()
 matrix_b = reader.sparse_matrix_b().astype(np.float64).tolil()
-matrix_b.resize(100, 8000)
+#matrix_b.resize(2000, 1000)
 epochs = 3500
 
 # SVD (Initializing P & Q)
@@ -17,6 +17,7 @@ eps = np.diag(eps_diag)
 Q = U
 pT = np.matmul(eps, vT)
 P = pT.T
+
 
 # Latent Factors
 def latent_factors(matrix, q, p):
@@ -37,17 +38,21 @@ def latent_factors(matrix, q, p):
     return R
 
 # Stochastic Gradient Descent
-def sgd(matrix, p, q, lam, gradient_step, epochs):
+def sgd(matrix, p, q, lam, learning_rate, epochs):
     non_zero_row, non_zero_col = matrix.nonzero()
     for k in range(epochs):
-        for i in range(len(non_zero_row)):
-            row = non_zero_row[i] #idx
-            col = non_zero_col[i] #idx
-            rui = matrix[row, col]
-            estimate = np.matmul(q[row].T, p[col])
-            error = rui - estimate
-            q[row] = q[row] + (gradient_step * ((error * p[col]) - (lam * q[row])))
-            p[col] = p[col] + (gradient_step * ((error * q[row]) - (lam * p[col])))
+        qG = []
+        pG = []
+        random = randint(0, len(non_zero_row) - 1)
+        x = non_zero_row[random]
+        i = non_zero_col[random]
+        rxi = matrix[x, i]
+        for j in range(len(p[i])):
+            estimate = np.matmul(q[x], p[i])
+            qG.append((-2 * (rxi - estimate) * p[i][j]) + (2 * lam * q[x][j]))
+            pG.append((-2 * (rxi - estimate) * q[x][j]) + (2 * lam * p[i][j]))
+        p[i] = p[i] - np.multiply(learning_rate, np.array(pG))
+        q[x] = q[x] - np.multiply(learning_rate, np.array(qG))
     return p, q
 
 # Batch Gradient Descent WIP
@@ -66,15 +71,12 @@ def bgd(matrix, p, q, lam, gradient_step, epochs):
                 pif = -2 * (rui - estimate) * q[row][j] + (2 * lam * q[row][j])
             gQ += qif
             gP += pif
-        q = q - gradient_step * gQ
-        p = p - gradient_step * gP
+        q = q - np.multiply(gradient_step, gQ)
+        p = p - np.multiply(gradient_step * gP)
     return p, q
 
 #P, Q = sgd(matrix_b, P, Q, 0.5, 0.1, 15)
-P, Q = bgd(matrix_b, P, Q, 0.5, 0.1, 1500)
-print("P: ", P[1])
-
-    
+P, Q = sgd(matrix_b, P, Q, 0.5, 0.0001, 10000)
 
 
 
