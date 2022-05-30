@@ -13,7 +13,7 @@ reader = DataReader()
 matrix_a = reader.sparse_matrix_a()
 matrix_b = matrix_a.transpose()
 norms = np.sqrt(matrix_b.multiply(matrix_b).sum(1))
-threshold = 0.5
+threshold = 0.1
 gamma = 4 * np.log(len(norms)) / threshold
 
 
@@ -96,37 +96,44 @@ def to_sparse_matrix(rows, cols, values):
 if __name__ == '__main__':
     print("Start Execution")
 
-    print("--- step 1: Dimsium Application ---")
-    # For building sparse matrix from map-reduce operation
-    approximated_rows = []
-    approximated_cols = []
-    approximated_values = []
+    threshold = 0.0
+    for execution in range(10):
+        print("execution number: " + str(execution))
+        if threshold < 0.9:
+            threshold = threshold + 0.1
+            gamma = 4 * np.log(len(norms)) / threshold
+        print("threshold: " + str(threshold))
+        print("--- step 1: Dimsium Application ---")
+        # For building sparse matrix from map-reduce operation
+        approximated_rows = []
+        approximated_cols = []
+        approximated_values = []
 
-    start_time = time.time()
-    for i in range(0, len(reader.users) - 1):
-        mapper_result = map(matrix_a.getrow(i))
-        # do not apply reduce operation on empty map results
-        if mapper_result:
-            reducer_result = reduce(mapper_result)
-            _row, _col, _value = converter(reducer_result)
-            approximated_rows.append(_row)
-            approximated_cols.append(_col)
-            approximated_values.append(_value)
-    end_time = time.time()
-    print("--- %s seconds dimsium time execution ---" % (end_time - start_time))
+        start_time = time.time()
+        for i in range(0, len(reader.users) - 1):
+            mapper_result = map(matrix_a.getrow(i))
+            # do not apply reduce operation on empty map results
+            if mapper_result:
+                reducer_result = reduce(mapper_result)
+                _row, _col, _value = converter(reducer_result)
+                approximated_rows.append(_row)
+                approximated_cols.append(_col)
+                approximated_values.append(_value)
+        end_time = time.time()
+        print("--- %s seconds dimsium time execution ---" % (end_time - start_time))
 
-    print('--- step 2: Dimsium Results Conversion ---')
-    #  dimsium results to sparse matrix conversion
-    approximated_operation = to_sparse_matrix(approximated_rows, approximated_cols, approximated_values)
-    approximated_operation.resize(149, 149)
+        print('--- step 2: Dimsium Results Conversion ---')
+        #  dimsium results to sparse matrix conversion
+        approximated_operation = to_sparse_matrix(approximated_rows, approximated_cols, approximated_values)
+        approximated_operation.resize(149, 149)
 
-    print('--- step 3: Exact Operation Calculation ---')
-    #  calculation of A^T * T
-    exact_operation = matrix_a.transpose().dot(matrix_a)
-    #  normalize the results to be able to calculate MSE
-    exact_operation_normed = normalize(exact_operation, axis=0, norm='l1')
+        print('--- step 3: Exact Operation Calculation ---')
+        #  calculation of A^T * T
+        exact_operation = matrix_a.transpose().dot(matrix_a)
+        #  normalize the results to be able to calculate MSE
+        exact_operation_normed = normalize(exact_operation, axis=0, norm='l1')
 
-    print('--- step 3: MSE Calculation ---')
-    mse = (np.square(approximated_operation - exact_operation_normed)).mean()
-    print("MSE Value: " + str(mse))
-    print("End Execution")
+        print('--- step 3: MSE Calculation ---')
+        mse = (np.square(approximated_operation - exact_operation_normed)).mean()
+        print("MSE Value: " + str(mse))
+        print("End Execution")
