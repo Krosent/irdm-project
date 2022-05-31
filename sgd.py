@@ -93,8 +93,16 @@ def accuracy_validation(p, q):
     print(test_set.shape)
 
     training_p = p[:indx, :]
+    test_p = p[indx:, :]
 
-    _P, _Q = sgd(training_set, training_p, q, 0.5, 0.0001, 10000)
+    p_training, q_training = sgd(training_set, training_p, q, 0.5, 0.0001, 10000)
+    p_test, q_test = sgd(test_set, test_p, q, 0.5, 0.0001, 10000)
+
+    mse_training = np.square(training_set - q_training.dot(p_training.T)).mean()
+    mse_test = np.square(test_set - q_test.dot(p_test.T)).mean()
+
+    print("MSE For Training Set: " + str(mse_training))
+    print("MSE For Test Set: " + str(mse_test))
 
     return 0
 
