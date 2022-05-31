@@ -7,6 +7,7 @@ from random import randint
 
 
 reader = DataReader()
+#  matrix_a = reader.sparse_matrix_a().astype(np.float64).tolil()
 matrix_b = reader.sparse_matrix_b().astype(np.float64).tolil()
 #matrix_b.resize(2000, 1000)
 epochs = 3500
@@ -27,7 +28,7 @@ def latent_factors(matrix, q, p):
     print("Before: ", len(R.nonzero()[0]))
     for i in range(1, M): #M
         zero_idx = np.where(R[i].toarray()[0] == 0)
-        for j in range(len(zero_idx[0])) :
+        for j in range(len(zero_idx[0])):
             qi = q[i]
             px = p[zero_idx[0][j]]
             rxi = 0
@@ -36,6 +37,7 @@ def latent_factors(matrix, q, p):
             R[i,zero_idx[0][j]] = round(rxi)
     print("After: ", len(R.nonzero()[0]))
     return R
+
 
 # Stochastic Gradient Descent
 def sgd(matrix, p, q, lam, learning_rate, epochs):
@@ -75,8 +77,38 @@ def bgd(matrix, p, q, lam, gradient_step, epochs):
         p = p - np.multiply(gradient_step * gP)
     return p, q
 
-#P, Q = sgd(matrix_b, P, Q, 0.5, 0.1, 15)
-P, Q = sgd(matrix_b, P, Q, 0.5, 0.0001, 10000)
+
+def accuracy_validation(p, q):
+    split_ratio = 0.3
+    print(split_ratio)
+    num_cols = int(matrix_b.shape[1])
+    print(num_cols)
+    ## training set
+    indx = int(num_cols * split_ratio)
+    print(indx)
+    training_set = matrix_b[:, :indx]
+    test_set = matrix_b[:, indx:]
+    # print(training_set)
+    print(training_set.shape)
+    print(test_set.shape)
+
+    training_p = p[:indx, :]
+
+    _P, _Q = sgd(training_set, training_p, q, 0.5, 0.0001, 10000)
+
+    return 0
+
+if __name__ == '__main__':
+    #P, Q = sgd(matrix_b, P, Q, 0.5, 0.1, 15)
+    # P, Q = sgd(matrix_b, P, Q, 0.5, 0.0001, 10000)  # result of 3rd task (on matrix B)
+
+    accuracy_validation(P, Q)
+    # print(str(training_set))
+    ## testing set
+
+
+    # print(str(P))
+    # print(str(Q))
 
 
 
