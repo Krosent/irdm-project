@@ -5,12 +5,12 @@ from scipy.stats import ortho_group
 from random import seed
 from random import randint
 import copy
+import matplotlib.pyplot as plt 
+import pandas as pd
 
 reader = DataReader()
-#  matrix_a = reader.sparse_matrix_a().astype(np.float64).tolil()
 matrix_b = reader.sparse_matrix_b().astype(np.float64).tolil()
-#matrix_b.resize(2000, 1000)
-epochs = 3500
+matrix_b.resize(2000, 1000)
 
 # SVD (Initializing P & Q)
 U, eps_diag, vT = linalg.svds(matrix_b)
@@ -18,7 +18,6 @@ eps = np.diag(eps_diag)
 Q = U
 pT = np.matmul(eps, vT)
 P = pT.T
-
 
 # Latent Factors
 def latent_factors(matrix, q, p):
@@ -38,9 +37,8 @@ def latent_factors(matrix, q, p):
     print("After: ", len(R.nonzero()[0]))
     return R
 
-
 # Stochastic Gradient Descent
-def sgd(matrix, p, q, lam, learning_rate, epochs):
+def sgd(matrix, p, q, lam, learning_rate, epochs, mse_every_epoch):
     # make a deep copy of objects
     _p = copy.deepcopy(p)
     _q = copy.deepcopy(q)
@@ -56,12 +54,12 @@ def sgd(matrix, p, q, lam, learning_rate, epochs):
         for j in range(len(_p[i])):
             estimate = np.matmul(_q[x], _p[i])
             qG.append((-2 * (rxi - estimate) * _p[i][j]) + (2 * lam * _q[x][j]))
-            pG.append((-2 * (rxi - estimate) * _q[x][j]) + (2 * lam * _p[i][j]))
+            pG.append((2 * (rxi - estimate) * _q[x][j]) + (2 * lam * _p[i][j]))
         _p[i] = _p[i] - np.multiply(learning_rate, np.array(pG))
         _q[x] = _q[x] - np.multiply(learning_rate, np.array(qG))
 
         # calculate MSE for each 1k epoch and add it to the history
-        if k % 1000 == 0:
+        if k % mse_every_epoch == 0:
             mse = np.square(matrix - _q.dot(_p.T)).mean()
             accuracy_history.append(mse)
     return _p, _q, accuracy_history
@@ -87,33 +85,51 @@ def bgd(matrix, p, q, lam, gradient_step, epochs):
     return p, q
 
 
-def accuracy_validation(p, q):
+def accuracy_validation(p, q, epochs, mse_every_epoch):
     split_ratio = 0.3
-    num_cols = int(matrix_b.shape[1])
-    indx = int(num_cols * split_ratio)
+    num_rows, num_cols = matrix_b.shape
+    indx_p = int(num_cols * split_ratio)
+    indx_q = int(num_rows * split_ratio)
 
-    training_set = matrix_b[:, :indx]
-    test_set = matrix_b[:, indx:]
+    training_set = matrix_b[:, :indx_p]
+    test_set = matrix_b[:, indx_p:]
 
-    training_p = p[:indx, :]
-    test_p = p[indx:, :]
+    training_p = p[:indx_p, :]
+    test_p = p[indx_p:, :]
 
-    p_training, q_training, accuracy_history_training = sgd(training_set, training_p, q, 0.5, 0.0001, 10000)
-    p_test, q_test, accuracy_history_test = sgd(test_set, test_p, q, 0.5, 0.0001, 10000)
+    training_q = q[:, :indx_q]
+    test_q = q[:, indx_q:]
+
+    p_training, q_training, accuracy_history_training = sgd(training_set, training_p, q, 0.1, 0.00001, epochs, mse_every_epoch)
+    p_test, q_test, accuracy_history_test = sgd(test_set, test_p, q, 0.1, 0.00001, epochs, mse_every_epoch)
 
     mse_training = np.square(training_set - q_training.dot(p_training.T)).mean()
     mse_test = np.square(test_set - q_test.dot(p_test.T)).mean()
 
+
+    fig, (ax1, ax2) = plt.subplots(1,2)
+    fig.suptitle('MSE History - Epochs: ' + str(epochs))
+    ax1.plot(accuracy_history_training)
+    ax1.set_title("Training Set")
+    ax1.set_xticks(range(0, len(accuracy_history_training), 1))
+    ax1.set_xticklabels(range(0, epochs, mse_every_epoch))
+
+    ax2.plot(accuracy_history_test)
+    ax2.set_title("Test set")
+    ax1.set_xticks(range(0, len(accuracy_history_test), 1))
+    ax2.set_xticklabels(range(0, epochs, mse_every_epoch))
+    plt.show()
+
     print("MSE For Training Set: " + str(mse_training))
-    print("MSE History for Training Set: " + str(accuracy_history_training))
     print("MSE For Test Set: " + str(mse_test))
-    print("MSE History for Test Set: " + str(accuracy_history_test))
     return 0
 
 
+epochs = 1000
+mse_every_epoch = 100
 if __name__ == '__main__':
     _P_validation = copy.deepcopy(P)
     _Q_validation = copy.deepcopy(Q)
-    accuracy_validation(_P_validation, _Q_validation)
+    accuracy_validation(_P_validation, _Q_validation, epochs, mse_every_epoch)
 
-    P, Q, history = sgd(matrix_b, P, Q, 0.5, 0.0001, 10000)  # result of 3rd task (on matrix B)
+   # P, Q, history = sgd(matrix_b, P, Q, 0.5, 0.0001, 10000)  # result of 3rd task (on matrix B)
