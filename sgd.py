@@ -54,7 +54,7 @@ def sgd(matrix, p, q, lam, learning_rate, epochs, mse_every_epoch):
         for j in range(len(_p[i])):
             estimate = np.matmul(_q[x], _p[i])
             qG.append((-2 * (rxi - estimate) * _p[i][j]) + (2 * lam * _q[x][j]))
-            pG.append((2 * (rxi - estimate) * _q[x][j]) + (2 * lam * _p[i][j]))
+            pG.append((-2 * (rxi - estimate) * _q[x][j]) + (2 * lam * _p[i][j]))
         _p[i] = _p[i] - np.multiply(learning_rate, np.array(pG))
         _q[x] = _q[x] - np.multiply(learning_rate, np.array(qG))
 
@@ -65,24 +65,44 @@ def sgd(matrix, p, q, lam, learning_rate, epochs, mse_every_epoch):
     return _p, _q, accuracy_history
 
 # Batch Gradient Descent WIP
-def bgd(matrix, p, q, lam, gradient_step, epochs):
+def bgd(matrix, p, q, lam, learning_rate, epochs, mse_every_epoch):
+    # make a deep copy of objects
+    _p = copy.deepcopy(p)
+    _q = copy.deepcopy(q)
+    accuracy_history = []
     non_zero_row, non_zero_col = matrix.nonzero()
+    estimates = []
     for k in range(epochs):
-        gQ = 0
-        gP = 0
-        for j in range(1, 6): 
-            for i in range(len(non_zero_row)):
-                row = non_zero_row[i] #idx
-                col = non_zero_col[i] #idx
-                rui = matrix[row, col]
-                estimate = np.matmul(q[row].T, p[col])
-                qif = -2 * (rui - estimate) * p[col][j] + (2 * lam * q[row][j])
-                pif = -2 * (rui - estimate) * q[row][j] + (2 * lam * q[row][j])
-            gQ += qif
-            gP += pif
-        q = q - np.multiply(gradient_step, gQ)
-        p = p - np.multiply(gradient_step * gP)
-    return p, q
+        gQ = np.zeros(q.shape)
+        gP = np.zeros(p.shape)
+        # Loop through all know rating every iteration to create a gradient matrix for P and Q
+        print("EPOCH: ", k)
+        print("q[first_non_zero]: ", _q[non_zero_row[1]], " p[first_non_zero]: ", _p[non_zero_col[1]])
+        for r in range(len(non_zero_row)):
+            qx_g = [] # gradient for row x in q
+            pi_g = [] # gradient for row i in p
+            x = non_zero_row[r]
+            i = non_zero_col[r]
+            rxi = matrix[x, i]
+            #print("Q: ", _q.shape, " P: ", _p.shape)
+            estimate = np.matmul(_q[x], _p[i])
+            estimates.append(np.matmul(_q[x], _p[i]))
+            for j in range(len(_p[i])):
+                qx_g.append((-2 * (rxi - estimate) * _p[i][j]) + (2 * lam * _q[x][j]))
+                pi_g.append((-2 * (rxi - estimate) * _q[x][j]) + (2 * lam * _p[i][j]))
+            # update the row in the gradient matrices
+            gP[i] += pi_g
+            gQ[x] += qx_g
+        print("Max estimate: ", max(estimates))
+        print("====================")
+        # update p and q after looping through all know ratings
+        _p = _p - np.multiply(learning_rate, gP)
+        _q = _q - np.multiply(learning_rate, gQ)
+
+        if k % mse_every_epoch == 0:
+            mse = np.square(matrix - _q.dot(_p.T)).mean()
+            accuracy_history.append(mse)
+    return _p, _q, accuracy_history
 
 
 def accuracy_validation(p, q, epochs, mse_every_epoch):
@@ -100,11 +120,11 @@ def accuracy_validation(p, q, epochs, mse_every_epoch):
     training_q = q[:, :indx_q]
     test_q = q[:, indx_q:]
 
-    p_training, q_training, accuracy_history_training = sgd(training_set, training_p, q, 0.1, 0.00001, epochs, mse_every_epoch)
-    p_test, q_test, accuracy_history_test = sgd(test_set, test_p, q, 0.1, 0.00001, epochs, mse_every_epoch)
+    p_training, q_training, accuracy_history_training = bgd(training_set, training_p, q, 0.5, 0.1, epochs, mse_every_epoch)
+   # p_test, q_test, accuracy_history_test = bgd(test_set, test_p, q, 0.1, 0.1, epochs, mse_every_epoch)
 
     mse_training = np.square(training_set - q_training.dot(p_training.T)).mean()
-    mse_test = np.square(test_set - q_test.dot(p_test.T)).mean()
+    #mse_test = np.square(test_set - q_test.dot(p_test.T)).mean()
 
 
     fig, (ax1, ax2) = plt.subplots(1,2)
@@ -114,19 +134,19 @@ def accuracy_validation(p, q, epochs, mse_every_epoch):
     ax1.set_xticks(range(0, len(accuracy_history_training), 1))
     ax1.set_xticklabels(range(0, epochs, mse_every_epoch))
 
-    ax2.plot(accuracy_history_test)
-    ax2.set_title("Test set")
-    ax1.set_xticks(range(0, len(accuracy_history_test), 1))
-    ax2.set_xticklabels(range(0, epochs, mse_every_epoch))
+    #ax2.plot(accuracy_history_test)
+    #ax2.set_title("Test set")
+    #ax2.set_xticks(range(0, len(accuracy_history_test), 1))
+    #ax2.set_xticklabels(range(0, epochs, mse_every_epoch))
     plt.show()
-
+    print("accuracy history training: ", accuracy_history_training)
     print("MSE For Training Set: " + str(mse_training))
-    print("MSE For Test Set: " + str(mse_test))
+    #print("MSE For Test Set: " + str(mse_test))
     return 0
 
 
-epochs = 1000
-mse_every_epoch = 100
+epochs = 5
+mse_every_epoch = 1
 if __name__ == '__main__':
     _P_validation = copy.deepcopy(P)
     _Q_validation = copy.deepcopy(Q)
