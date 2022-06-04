@@ -10,7 +10,7 @@ import pandas as pd
 
 reader = DataReader()
 matrix_b = reader.sparse_matrix_b().astype(np.float64).tolil()
-matrix_b.resize(2000, 1000)
+matrix_b.resize(149, 100000)
 
 # SVD (Initializing P & Q)
 U, eps_diag, vT = linalg.svds(matrix_b)
@@ -120,24 +120,26 @@ def accuracy_validation(p, q, epochs, mse_every_epoch):
     training_q = q[:, :indx_q]
     test_q = q[:, indx_q:]
 
-    p_training, q_training, accuracy_history_training = bgd(training_set, training_p, q, 0.5, 0.1, epochs, mse_every_epoch)
-   # p_test, q_test, accuracy_history_test = bgd(test_set, test_p, q, 0.1, 0.1, epochs, mse_every_epoch)
+    p_training, q_training, accuracy_history_training = sgd(training_set, training_p, q, 0.5, 0.000005, epochs, mse_every_epoch)
+    p_test, q_test, accuracy_history_test = sgd(test_set, test_p, q, 0.5, 0.000005, epochs, mse_every_epoch)
 
     mse_training = np.square(training_set - q_training.dot(p_training.T)).mean()
-    #mse_test = np.square(test_set - q_test.dot(p_test.T)).mean()
+    mse_test = np.square(test_set - q_test.dot(p_test.T)).mean()
 
 
-    fig, (ax1, ax2) = plt.subplots(1,2)
-    fig.suptitle('MSE History - Epochs: ' + str(epochs))
+    fig1, ax1 = plt.subplots()
+    fig1.suptitle('MSE History - Epochs: ' + str(epochs))
     ax1.plot(accuracy_history_training)
     ax1.set_title("Training Set")
-    ax1.set_xticks(range(0, len(accuracy_history_training), 1))
-    ax1.set_xticklabels(range(0, epochs, mse_every_epoch))
+    ax1.set_xticks(range(0, len(accuracy_history_training), 10))
+    ax1.set_xticklabels(range(0, epochs, 250))
 
-    #ax2.plot(accuracy_history_test)
-    #ax2.set_title("Test set")
-    #ax2.set_xticks(range(0, len(accuracy_history_test), 1))
-    #ax2.set_xticklabels(range(0, epochs, mse_every_epoch))
+    fig2, ax2 = plt.subplots()
+    fig2.suptitle('MSE History - Epochs: ' + str(epochs))
+    ax2.plot(accuracy_history_test)
+    ax2.set_title("Test set")
+    ax2.set_xticks(range(0, len(accuracy_history_test), 10))
+    ax2.set_xticklabels(range(0, epochs, 250))
     plt.show()
     print("accuracy history training: ", accuracy_history_training)
     print("MSE For Training Set: " + str(mse_training))
@@ -145,8 +147,8 @@ def accuracy_validation(p, q, epochs, mse_every_epoch):
     return 0
 
 
-epochs = 5
-mse_every_epoch = 1
+epochs = 2500
+mse_every_epoch = 25
 if __name__ == '__main__':
     _P_validation = copy.deepcopy(P)
     _Q_validation = copy.deepcopy(Q)

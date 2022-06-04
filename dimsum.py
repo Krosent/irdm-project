@@ -8,6 +8,8 @@ import numpy as np
 import random
 import time
 from sklearn.preprocessing import normalize
+import matplotlib.pyplot as plt 
+
 
 reader = DataReader()
 matrix_a = reader.sparse_matrix_a()
@@ -96,6 +98,9 @@ def to_sparse_matrix(rows, cols, values):
 if __name__ == '__main__':
     print("Start Execution")
 
+    mse_list = []
+    threshold_list = []
+
     threshold = 0.0
     for execution in range(10):
         print("execution number: " + str(execution))
@@ -135,5 +140,15 @@ if __name__ == '__main__':
 
         print('--- step 3: MSE Calculation ---')
         mse = (np.square(approximated_operation - exact_operation_normed)).mean()
-        print("MSE Value: " + str(mse))
-        print("End Execution")
+        #print("MSE Value: " + str(mse))
+        #print("End Execution")
+        mse_list.append(round(mse, 5))
+        threshold_list.append(round(threshold,1))
+
+    fig, ax = plt.subplots()
+    ax.plot(mse_list)
+    ax.set(xlabel="Dimsum parameter", ylabel="MSE", title="MSE - changing dimsum parameter")
+    ax.set_xticks(range(0, len(mse_list), 1))
+    ax.set_xticklabels(threshold_list)
+    plt.show()
+    print("MSE list: ", mse_list)
