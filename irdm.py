@@ -268,28 +268,33 @@ class GradientDescent:
         training_q = q[:, :indx_q]
         test_q = q[:, indx_q:]
 
-        p_training, q_training, accuracy_history_training = self.sgd(training_set, training_p, q, 0.5, 0.00001, epochs, mse_every_epoch)
-       # p_test, q_test, accuracy_history_test = bgd(test_set, test_p, q, 0.1, 0.1, epochs, mse_every_epoch)
+        p_training, q_training, accuracy_history_training = self.sgd(training_set, training_p, q, 0.5, 0.000005, epochs, mse_every_epoch)
+        p_test, q_test, accuracy_history_test = self.sgd(test_set, test_p, q, 0.5, 0.000005, epochs, mse_every_epoch)
 
         mse_training = np.square(training_set - q_training.dot(p_training.T)).mean()
-        #mse_test = np.square(test_set - q_test.dot(p_test.T)).mean()
+        mse_test = np.square(test_set - q_test.dot(p_test.T)).mean()
 
-
-        fig, (ax1, ax2) = plt.subplots(1,2)
-        fig.suptitle('MSE History - Epochs: ' + str(epochs))
+        fig1, ax1 = plt.subplots()
+        fig1.suptitle('MSE History - Epochs: ' + str(epochs))
+        ax1.set_xlabel("Epochs")
+        ax1.set_ylabel("MSE")
         ax1.plot(accuracy_history_training)
         ax1.set_title("Training Set")
-        ax1.set_xticks(range(0, len(accuracy_history_training), 1))
-        ax1.set_xticklabels(range(0, epochs, mse_every_epoch))
+        ax1.set_xticks(range(0, len(accuracy_history_training), 100))
+        ax1.set_xticklabels(range(0, epochs, 300))
 
-        #ax2.plot(accuracy_history_test)
-        #ax2.set_title("Test set")
-        #ax2.set_xticks(range(0, len(accuracy_history_test), 1))
-        #ax2.set_xticklabels(range(0, epochs, mse_every_epoch))
+        fig2, ax2 = plt.subplots()
+        fig2.suptitle('MSE History - Epochs: ' + str(epochs))
+        ax2.plot(accuracy_history_test)
+        ax2.set_xlabel("Epochs")
+        ax2.set_ylabel("MSE")
+        ax2.set_title("Test set")
+        ax2.set_xticks(range(0, len(accuracy_history_test), 100))
+        ax2.set_xticklabels(range(0, epochs, 300))
         plt.show()
         print("accuracy history training: ", accuracy_history_training)
         print("MSE For Training Set: " + str(mse_training))
-        #print("MSE For Test Set: " + str(mse_test))
+        print("MSE For Test Set: " + str(mse_test))
         return 0
 
     def evaluate_p_q(self, matrix, k):
@@ -305,69 +310,74 @@ class GradientDescent:
         return P, Q
 
 
-if __name__ == '__main__':
-    print("Start DIMSUM Execution")
-
-    dimsum = Dimsum()
-
-    threshold = 0.0
-    for execution in range(10):
-        print("execution number: " + str(execution))
-        if threshold < 0.9:
-            threshold = threshold + 0.1
-            gamma = 4 * np.log(len(dimsum.norms)) / threshold
-        print("threshold: " + str(threshold))
-        print("--- step 1: Dimsium Application ---")
-        # For building sparse matrix from map-reduce operation
-        approximated_rows = []
-        approximated_cols = []
-        approximated_values = []
-
-        start_time = time.time()
-        for i in range(0, len(dimsum.reader.users) - 1):
-            mapper_result = dimsum.map(dimsum.matrix_a.getrow(i))
-            # do not apply reduce operation on empty map results
-            if mapper_result:
-                reducer_result = dimsum.reduce(mapper_result)
-                _row, _col, _value = dimsum.converter(reducer_result)
-                approximated_rows.append(_row)
-                approximated_cols.append(_col)
-                approximated_values.append(_value)
-        end_time = time.time()
-        print("--- %s seconds dimsium time execution ---" % (end_time - start_time))
-
-        print('--- step 2: Dimsium Results Conversion ---')
-        #  dimsium results to sparse matrix conversion
-        approximated_operation = dimsum.to_sparse_matrix(approximated_rows, approximated_cols, approximated_values)
-        approximated_operation.resize(149, 149)
-
-        print('--- step 3: Exact Operation Calculation ---')
-        #  calculation of A^T * T
-        exact_operation = dimsum.matrix_a.transpose().dot(dimsum.matrix_a)
-        #  normalize the results to be able to calculate MSE
-        exact_operation_normed = normalize(exact_operation, axis=0, norm='l1')
-
-        print('--- step 3: MSE Calculation ---')
-        mse = (np.square(approximated_operation - exact_operation_normed)).mean()
-        print("MSE Value: " + str(mse))
-        print("End DIMSUM Execution")
-
-        print("Start SG Execution")
-        epochs = 2500
-        mse_every_epoch = 1
+def run_program(algorithm) :
+    if algorithm == "sgd" :
+        print("Start SGD Execution")
+        epochs = 3000
+        mse_every_epoch = 3
 
         reader = DataReader()
         matrix_b = reader.sparse_matrix_b().astype(np.float64).tolil()
-        matrix_b.resize(2000, 1000)
-
+        matrix_b.resize(149, 10000)
+    
         gradient_descent = GradientDescent()
-        for i in range(1, 16):
+        for i in range(1, 15):
             P, Q = gradient_descent.evaluate_p_q(matrix=matrix_b, k=i)
 
             _P_validation = copy.deepcopy(P)
             _Q_validation = copy.deepcopy(Q)
             print("K=" + str(i))
             gradient_descent.accuracy_validation(matrix=matrix_b, p=_P_validation,
-                                                 q=_Q_validation, epochs=epochs,
-                                                 mse_every_epoch=mse_every_epoch)
-        print("End SG Execution")
+                                                    q=_Q_validation, epochs=epochs,
+                                                    mse_every_epoch=mse_every_epoch)
+        print("End SGD Execution")
+    
+    elif algorithm == "dimsum" :
+        print("Start DIMSUM Execution")
+        dimsum = Dimsum()
+
+        threshold = 0.0
+        for execution in range(10):
+            print("execution number: " + str(execution))
+            if threshold < 0.9:
+                threshold = threshold + 0.1
+                gamma = 4 * np.log(len(dimsum.norms)) / threshold
+            print("threshold: " + str(threshold))
+            print("--- step 1: Dimsium Application ---")
+            # For building sparse matrix from map-reduce operation
+            approximated_rows = []
+            approximated_cols = []
+            approximated_values = []
+
+            start_time = time.time()
+            for i in range(0, len(dimsum.reader.users) - 1):
+                mapper_result = dimsum.map(dimsum.matrix_a.getrow(i))
+                # do not apply reduce operation on empty map results
+                if mapper_result:
+                    reducer_result = dimsum.reduce(mapper_result)
+                    _row, _col, _value = dimsum.converter(reducer_result)
+                    approximated_rows.append(_row)
+                    approximated_cols.append(_col)
+                    approximated_values.append(_value)
+            end_time = time.time()
+            print("--- %s seconds dimsium time execution ---" % (end_time - start_time))
+
+            print('--- step 2: Dimsium Results Conversion ---')
+            #  dimsium results to sparse matrix conversion
+            approximated_operation = dimsum.to_sparse_matrix(approximated_rows, approximated_cols, approximated_values)
+            approximated_operation.resize(149, 149)
+
+            print('--- step 3: Exact Operation Calculation ---')
+            #  calculation of A^T * T
+            exact_operation = dimsum.matrix_a.transpose().dot(dimsum.matrix_a)
+            #  normalize the results to be able to calculate MSE
+            exact_operation_normed = normalize(exact_operation, axis=0, norm='l1')
+
+            print('--- step 3: MSE Calculation ---')
+            mse = (np.square(approximated_operation - exact_operation_normed)).mean()
+            print("MSE Value: " + str(mse))
+            print("End DIMSUM Execution")
+
+if __name__ == '__main__':
+    #run_program("dimsum")
+    run_program("sgd")
