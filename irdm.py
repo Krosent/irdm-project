@@ -9,8 +9,19 @@ from random import randint
 import copy
 import matplotlib.pyplot as plt
 
+# The code is divided into logical steps (classes) where each class is responsible for certain task
+# The authors: Vandevivere Achiel and Kuznetsov Artyom
+
 
 class DataReader:
+    """
+    The class is responsible for reading data from txt file and parsing it into sparse matrices.
+    We decided to read only portion of the file, since it is quite big. You can tweak the number for your experiments.
+    Our code expect to store dataset in 'netflix_dataset' folder.
+    Please modify the following line in case you want to change input path:
+    **  input_1 = open('netflix_dataset/combined_data_1.txt', 'r')
+    """
+
     movies = []
     users = []
     ratings = []
@@ -57,6 +68,13 @@ class DataReader:
 
 
 class Dimsum:
+    """
+    This class is responsible for Dimsium Algorithm implementation.
+    We use DataReader class to read data from the input path.
+    Our algorithm is seperated into map, reduce methods that do most of the jobs.
+    The rest of the functions inside are util functions.
+    """
+
     reader = DataReader()
     matrix_a = reader.sparse_matrix_a()
     matrix_b = matrix_a.transpose()
@@ -110,6 +128,9 @@ class Dimsum:
                 snd = sum(values)
                 return key, fst * snd
 
+    """
+    Preparation function that simulates reduce operation in pure python
+    """
     def prepare_reduce_input(self, mapper_results):
         # https://docs.python.org/3/library/collections.html#collections.defaultdict
         _dict = defaultdict(list)
@@ -136,8 +157,8 @@ class Dimsum:
         return matrix
 
 
-class GradientDescent():
-    # Latent Factors
+class GradientDescent:
+    # Function returns Latent Factors
     def latent_factors(self, matrix, q, p):
         R = matrix
         M, N = R.shape
@@ -157,7 +178,10 @@ class GradientDescent():
 
     # Stochastic Gradient Descent
     def sgd(self, matrix, p, q, lam, learning_rate, epochs, mse_every_epoch):
-        # make a deep copy of objects
+        """
+        Making a deepcopy of p, q in order to avoid reference pointing and side effects outside the function
+        """
+
         _p = copy.deepcopy(p)
         _q = copy.deepcopy(q)
         accuracy_history = []
@@ -182,9 +206,12 @@ class GradientDescent():
                 accuracy_history.append(mse)
         return _p, _q, accuracy_history
 
-    # Batch Gradient Descent WIP
+    # Batch Gradient Descent
     def bgd(self, matrix, p, q, lam, learning_rate, epochs, mse_every_epoch):
-        # make a deep copy of objects
+        """
+        Making a deepcopy of p, q in order to avoid reference pointing and side effects outside the function
+        """
+
         _p = copy.deepcopy(p)
         _q = copy.deepcopy(q)
         accuracy_history = []
@@ -221,8 +248,12 @@ class GradientDescent():
                 accuracy_history.append(mse)
         return _p, _q, accuracy_history
 
-
     def accuracy_validation(self, matrix, p, q, epochs, mse_every_epoch):
+        """
+        This function is intended to calculate accuracy metrics for Gradient Descent algorithms.
+        We calculate MSE as a main metrics to evaluate efficiency of algorithm.
+        matplotlib is used for data visualization purposes.
+        """
         split_ratio = 0.3
         num_rows, num_cols = matrix.shape
         indx_p = int(num_cols * split_ratio)
@@ -261,8 +292,10 @@ class GradientDescent():
         #print("MSE For Test Set: " + str(mse_test))
         return 0
 
-
     def evaluate_p_q(self, matrix, k):
+        """
+        A method that is used to calculate SVD of certain matrix with specific K value
+        """
         # SVD (Initializing P & Q)
         U, eps_diag, vT = linalg.svds(A=matrix, k=k)
         eps = np.diag(eps_diag)
