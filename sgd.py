@@ -141,7 +141,7 @@ def accuracy_validation(p, q, epochs, mse_every_epoch):
 epochs = 2500
 mse_every_epoch = 1
 if __name__ == '__main__':
-    for i in range(2,22,2):
+    for i in range(1, 16):
         # SVD (Initializing P & Q)
         U, eps_diag, vT = linalg.svds(A=matrix_b, k=i)
         eps = np.diag(eps_diag)
