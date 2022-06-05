@@ -119,7 +119,7 @@ class Dimsum:
             cj_normalized = self.norms[int(rating_indexes[0])]
             ck_normalized = self.norms[int(rating_indexes[1])]
 
-            if (gamma / (cj_normalized * ck_normalized)) > 1:
+            if (self.gamma / (cj_normalized * ck_normalized)) > 1:
                 fst = 1 / (cj_normalized * ck_normalized)
                 snd = sum(values)
                 return key, fst * snd
