@@ -141,7 +141,7 @@ def accuracy_validation(p, q, epochs, mse_every_epoch):
 epochs = 2500
 mse_every_epoch = 1
 if __name__ == '__main__':
-    for i in range(1, 10):
+    for i in range(2,22,2):
         # SVD (Initializing P & Q)
         U, eps_diag, vT = linalg.svds(A=matrix_b, k=i)
         eps = np.diag(eps_diag)
@@ -151,6 +151,7 @@ if __name__ == '__main__':
 
         _P_validation = copy.deepcopy(P)
         _Q_validation = copy.deepcopy(Q)
+        print("K="+str(i))
         accuracy_validation(_P_validation, _Q_validation, epochs, mse_every_epoch)
 
    # P, Q, history = sgd(matrix_b, P, Q, 0.5, 0.0001, 10000)  # result of 3rd task (on matrix B)
