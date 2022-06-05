@@ -12,13 +12,6 @@ reader = DataReader()
 matrix_b = reader.sparse_matrix_b().astype(np.float64).tolil()
 matrix_b.resize(149, 100000)
 
-# SVD (Initializing P & Q)
-U, eps_diag, vT = linalg.svds(matrix_b)
-eps = np.diag(eps_diag)
-Q = U
-pT = np.matmul(eps, vT)
-P = pT.T
-
 # Latent Factors
 def latent_factors(matrix, q, p):
     R = matrix
@@ -79,8 +72,8 @@ def bgd(matrix, p, q, lam, learning_rate, epochs, mse_every_epoch):
         print("EPOCH: ", k)
         print("q[first_non_zero]: ", _q[non_zero_row[1]], " p[first_non_zero]: ", _p[non_zero_col[1]])
         for r in range(len(non_zero_row)):
-            qx_g = [] # gradient for row x in q
-            pi_g = [] # gradient for row i in p
+            qx_g = []  # gradient for row x in q
+            pi_g = []  # gradient for row i in p
             x = non_zero_row[r]
             i = non_zero_col[r]
             rxi = matrix[x, i]
@@ -150,8 +143,17 @@ def accuracy_validation(p, q, epochs, mse_every_epoch):
 epochs = 2500
 mse_every_epoch = 25
 if __name__ == '__main__':
-    _P_validation = copy.deepcopy(P)
-    _Q_validation = copy.deepcopy(Q)
-    accuracy_validation(_P_validation, _Q_validation, epochs, mse_every_epoch)
+    for i in range(2,22,2):
+        # SVD (Initializing P & Q)
+        U, eps_diag, vT = linalg.svds(A=matrix_b, k=i)
+        eps = np.diag(eps_diag)
+        Q = U
+        pT = np.matmul(eps, vT)
+        P = pT.T
+
+        _P_validation = copy.deepcopy(P)
+        _Q_validation = copy.deepcopy(Q)
+        print("K="+str(i))
+        accuracy_validation(_P_validation, _Q_validation, epochs, mse_every_epoch)
 
    # P, Q, history = sgd(matrix_b, P, Q, 0.5, 0.0001, 10000)  # result of 3rd task (on matrix B)
